@@ -1,24 +1,25 @@
 function syncUniversalToGCal() {
-  // 1. VUL HIER JE BRON EN DOEL IN
-  // Bron kan een iCal-link (https://...) OF een Google Agenda ID (...@group.calendar.google.com) zijn.
-   const SOURCE = "JOUW_ICAL_LINK_OF_BRON_AGENDA_ID";
-   const TARGET_CALENDAR_ID = "JOUW_DOEL_AGENDA_ID"; // Vaak je e-mailadres
+  // 1. SET YOUR SOURCE AND TARGET HERE
+  // Source can be an iCal link (https://...) OR a Google Calendar ID (...@group.calendar.google.com).
+  const SOURCE = "YOUR_ICAL_LINK_OR_SOURCE_CALENDAR_ID";
+  const TARGET_CALENDAR_ID = "YOUR_TARGET_CALENDAR_ID"; // Often your email address
 
-  // 2. AUTOMATISCHE DETECTIE & TAG GENERATIE
+  // 2. AUTOMATIC DETECTION & TAG GENERATION
   const isICal = SOURCE.toLowerCase().startsWith("http");
   let tagBase = isICal ? SOURCE.split("/").pop().split("?")[0] : SOURCE.split("@")[0];
   const UNIQUE_TAG_KEY = "sync_" + tagBase.substring(0, 30).replace(/[^a-zA-Z0-9]/g, "_");
 
   const targetCal = CalendarApp.getCalendarById(TARGET_CALENDAR_ID);
-  if (!targetCal) throw new Error("Doelagenda niet gevonden.");
+  if (!targetCal) throw new Error("Target calendar not found. Check the TARGET_CALENDAR_ID.");
 
-  // 3. ZOEKBEREIK 
+  // 3. SEARCH RANGE
+  // Default: 21 days back, 28 days ahead
   const startSearch = new Date();
   startSearch.setDate(startSearch.getDate() - 21);
   const endSearch = new Date();
   endSearch.setDate(new Date().getDate() + 28); 
 
-  // 4. BESTAANDE AFSPRAKEN IN KAART BRENGEN
+  // 4. MAP EXISTING EVENTS
   const targetEvents = targetCal.getEvents(startSearch, endSearch);
   const targetMap = {};
   targetEvents.forEach(ev => {
@@ -26,7 +27,7 @@ function syncUniversalToGCal() {
     if (sourceId) { targetMap[sourceId] = ev; }
   });
 
-  // 5. DATA OPHALEN
+  // 5. FETCH DATA
   let sourceEventsData = [];
 
   if (isICal) {
@@ -46,7 +47,7 @@ function syncUniversalToGCal() {
 
       sourceEventsData.push({
         id: uidMatch[1].trim(),
-        title: summaryMatch ? summaryMatch[1].trim() : "Geen titel",
+        title: summaryMatch ? summaryMatch[1].trim() : "No title",
         start: parseICalDate(dtStartMatch[1].trim()),
         end: parseICalDate(dtEndMatch[1].trim()),
         location: locationMatch ? locationMatch[1].trim() : "",
@@ -55,7 +56,7 @@ function syncUniversalToGCal() {
     });
   } else {
     const sourceCal = CalendarApp.getCalendarById(SOURCE);
-    if (!sourceCal) throw new Error("Bronagenda niet gevonden.");
+    if (!sourceCal) throw new Error("Source calendar not found. Check the SOURCE ID.");
     sourceCal.getEvents(startSearch, endSearch).forEach(ev => {
       sourceEventsData.push({
         id: ev.getId(), title: ev.getTitle(), start: ev.getStartTime(), end: ev.getEndTime(),
@@ -64,7 +65,7 @@ function syncUniversalToGCal() {
     });
   }
 
-  // 6. SYNCEN
+  // 6. SYNC EVENTS
   sourceEventsData.forEach(data => {
     if (isNaN(data.start.getTime())) return;
     if (targetMap[data.id]) {
@@ -74,24 +75,24 @@ function syncUniversalToGCal() {
       existing.setLocation(data.location);
       existing.setDescription(data.description);
       delete targetMap[data.id]; 
-      Logger.log("Geupdate: " + data.title + " " + data.start.getDate() + "-" + (data.start.getMonth() + 1) + "-" + data.start.getFullYear() + " om " + data.start.getHours() + ":" + (data.start.getMinutes()<10?'0':'') + data.start.getMinutes());
+      Logger.log("Updated: " + data.title + " on " + data.start.getDate() + "-" + (data.start.getMonth() + 1) + "-" + data.start.getFullYear() + " at " + data.start.getHours() + ":" + (data.start.getMinutes()<10?'0':'') + data.start.getMinutes());
     } else {
       const newEvent = targetCal.createEvent(data.title, data.start, data.end, {
         location: data.location, description: data.description
       });
       newEvent.setTag(UNIQUE_TAG_KEY, data.id); 
-      Logger.log("Nieuw: " + data.title);
+      Logger.log("New: " + data.title);
     }
   });
 
-  // 7. OPRUIMEN
+  // 7. CLEANUP
   for (const id in targetMap) {
     targetMap[id].deleteEvent();
-    Logger.log("Verwijderd: " + targetMap[id].getTitle());
+    Logger.log("Deleted: " + targetMap[id].getTitle());
   }
 }
 
-// DE GEREPAREERDE PARSER (GEEN TIJDVERSCHUIVING MEER)
+// THE FIXED PARSER (NO TIMEZONE SHIFT)
 function parseICalDate(dateStr) {
   const match = dateStr.match(/(\d{4})(\d{2})(\d{2})(T(\d{2})(\d{2})(\d{2}))?/);
   if (!match) return new Date(NaN);
@@ -100,12 +101,12 @@ function parseICalDate(dateStr) {
   const m = parseInt(match[2]) - 1;
   const d = parseInt(match[3]);
 
-  if (match[4]) { // Er is een tijd (T...)
+  if (match[4]) { // There is a time component (T...)
     const hh = parseInt(match[5]);
     const mm = parseInt(match[6]);
     const ss = parseInt(match[7]);
-    // Maakt een datum object in de lokale tijd van de script-instellingen
+    // Creates a Date object in the local time of the script settings
     return new Date(y, m, d, hh, mm, ss);
   }
-  return new Date(y, m, d); // Hele dag
+  return new Date(y, m, d); // All-day event
 }
