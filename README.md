@@ -1,35 +1,35 @@
 # Universal Google Calendar Sync (Apps Script)
 
-Dit is een lichtgewicht, betrouwbaar Google Apps Script dat automatisch afspraken vanuit externe bronnen (zoals iCal-links van roosters of andere Google Agenda's) synchroniseert naar één doel-agenda. 
+This is a lightweight, reliable Google Apps Script that automatically synchronizes events from external sources (such as iCal schedule links or other Google Calendars) into a single target calendar. 
 
 ## Features
-* **Universele Bronnen:** Ondersteunt zowel `.ics` (iCal) links als directe Google Calendar ID's.
-* **Slimme Deduplicatie:** Gebruikt unieke tags (`UNIQUE_TAG_KEY`) per bron om te voorkomen dat afspraken dubbel in je agenda komen te staan.
-* **Automatische Cleanup:** Afspraken die uit de bron zijn verwijderd, worden ook netjes uit je doel-agenda gehaald.
-* **Custom iCal Parser:** Bevat een robuuste datum-parser die specifiek is gebouwd om problemen met tijdzones (zomer/wintertijd) en 1970-fouten te voorkomen.
-* **Lichtgewicht:** Zoekt standaard 4 dagen terug en 30 dagen vooruit om timeouts te voorkomen.
+* **Universal Sources:** Supports both `.ics` (iCal) links and direct Google Calendar IDs.
+* **Smart Deduplication:** Uses unique tags (`UNIQUE_TAG_KEY`) per source to prevent duplicate events in your calendar.
+* **Automatic Cleanup:** Events deleted from the source are neatly removed from your target calendar.
+* **Custom iCal Parser:** Includes a robust date parser specifically built to prevent timezone issues (daylight saving time) and 1970 errors.
+* **Lightweight:** Searches 4 days back and 30 days ahead by default to prevent timeouts.
 
-## Hoe te gebruiken
+## How to Use
 
-1. Ga naar [Google Apps Script](https://script.google.com/) en maak een nieuw project aan.
-2. Kopieer de code uit `sync.gs` in dit project en plak het in je Apps Script editor.
-3. Pas de volgende twee variabelen aan bovenaan het script:
+1. Go to [Google Apps Script](https://script.google.com/) and create a new project.
+2. Copy the code from `sync.gs` in this project and paste it into your Apps Script editor.
+3. Adjust the following two variables at the top of the script:
    ```javascript
-   const SOURCE = "JOUW_ICAL_LINK_OF_BRON_AGENDA_ID";
-   const TARGET_CALENDAR_ID = "JOUW_DOEL_AGENDA_ID"; // Vaak je e-mailadres
+   const SOURCE = "YOUR_ICAL_LINK_OR_SOURCE_CALENDAR_ID";
+   const TARGET_CALENDAR_ID = "YOUR_TARGET_CALENDAR_ID"; // Often your email address
    ```
-4. Sla het script op en klik eenmalig op **Uitvoeren** om Google de benodigde rechten (CalendarApp & UrlFetchApp) te geven.
+4. Save the script and click **Run** once to grant Google the necessary permissions (CalendarApp & UrlFetchApp).
 
-### Automatiseren (Triggers)
-Om dit script op de achtergrond te laten draaien:
-1. Klik aan de linkerkant op het klokje (**Triggers**).
-2. Voeg een nieuwe trigger toe.
-3. Kies de functie `syncUniversalToGCal`.
-4. Selecteer de gebeurtenisbron: **Tijdgestuurd**.
-5. Kies bijvoorbeeld **Elk uur** of **Elke dag**, afhankelijk van hoe vaak je rooster wijzigt.
+### Automation (Triggers)
+To run this script in the background:
+1. Click the clock icon on the left menu (**Triggers**).
+2. Add a new trigger.
+3. Choose the function `syncUniversalToGCal`.
+4. Select the event source: **Time-driven**.
+5. Select the type of time based trigger, for example **Hourly** or **Daily**, depending on how often your schedule changes.
 
-## Beperkingen
-Omdat dit script is gebouwd om licht en snel te zijn, ondersteunt het momenteel *niet*:
-* **Complexe RRULE's:** iCal afspraken met een herhalingsregel (bijv. "elke maandag") worden alleen op de eerste datum ingepland.
-* **UTC Z-notaties:** iCal tijden die eindigen op een 'Z' (Zulu time/UTC) zonder lokale verschuiving kunnen bij bepaalde systemen tijdsverschillen opleveren. 
-* **Beveiligde agenda's:** iCal links die een inlog/wachtwoord vereisen werken niet direct via `UrlFetchApp`.
+## Limitations
+Because this script is built to be light and fast, it currently does *not* support:
+* **Complex RRULEs:** iCal events with a recurrence rule (e.g., "every Monday") are only scheduled on the first date.
+* **UTC Z-notations:** iCal times ending with a 'Z' (Zulu time/UTC) without a local time offset might cause time discrepancies with certain systems. 
+* **Secured calendars:** iCal links requiring a login/password do not work directly via `UrlFetchApp`.
